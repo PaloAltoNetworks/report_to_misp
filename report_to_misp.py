@@ -7,6 +7,17 @@ import argparse
 import requests
 
 
+distros = {"org": "0",
+           "community": "1",
+           "connected": "2",
+           "all": "3"}
+
+threat_levels = {"undefined": "4",
+                 "low": "3",
+                 "medium": "2",
+                 "high": "1"}
+
+
 def parse_arguments():
     parser = argparse.ArgumentParser()
 
@@ -41,6 +52,20 @@ def parse_arguments():
                         action='store_true',
                         help='Use SSL for accessing the MISP server')
 
+    parser.add_argument('-o', '--org',
+                        action='store',
+                        help='The organization that created the event')
+
+    parser.add_argument('-d', '--distribution',
+                        action='store',
+                        choices=distros.keys(),
+                        help='Who should be able to view the event')
+
+    parser.add_argument('-t', '--threat_level',
+                        action='store',
+                        choices=threat_levels.keys(),
+                        help='The threat level of the event')
+
     return parser
 
 
@@ -55,16 +80,25 @@ def get_misp_event_json(args, attributes):
                       "distribution": "0",
                       "Attribute": [],
                       "proposal_email_lock": False,
-                      "threat_level_id": "0"
+                      "threat_level_id": "4"
                       }
                   }
+
+    if args.org:
+        event_json["Event"]["org"] = args.org
+
+    if args.distribution:
+        event_json["Event"]["distribution"] = distros[args.distribution]
+
+    if args.threat_level:
+        event_json["Event"]["threat_level_id"] = threat_levels[args.threat_level]
 
     event_json["Event"]["Attribute"] = attributes
 
     return event_json
 
 
-def create_attribute(category, at_type, value, page, file_name):
+def create_attribute(args, category, at_type, value, page, file_name):
     at = {"category": category,
           "type": at_type,
           "value": value,
@@ -74,10 +108,13 @@ def create_attribute(category, at_type, value, page, file_name):
           "comment": "Attribute found on page %d of %s" % (page, file_name)
           }
 
+    if args.distribution:
+        at["distribution"] = distros[args.distribution]
+
     return at
 
 
-def get_option(options, at):
+def get_option(args, options, at):
     print("\nInclude %s %s in MISP as:\n-------------------------" % (at["type"], at["match"]))
     for key in sorted(options.keys()):
         print("%d: %s" % (key, options[key]))
@@ -91,7 +128,7 @@ def get_option(options, at):
 
             sp = options[int(option)].split(":")
 
-            return create_attribute(sp[0].strip(), sp[1].strip(), at["match"], at["page"], at["file"])
+            return create_attribute(args, sp[0].strip(), sp[1].strip(), at["match"], at["page"], at["file"])
 
         print("%d is not a valid option!" % option)
 
@@ -103,9 +140,9 @@ def create_url(args, at):
                    2: "Payload delivery : url",
                    3: "External analysis : url"}
 
-        return get_option(options, at)
+        return get_option(args, options, at)
     else:
-        return create_attribute("Network activity", "url", at["match"], at["page"], at["file"])
+        return create_attribute(args, "Network activity", "url", at["match"], at["page"], at["file"])
 
 
 def create_host(args, at):
@@ -115,9 +152,9 @@ def create_host(args, at):
                    2: "Payload delivery : hostname",
                    3: "External analysis : hostname"}
 
-        return get_option(options, at)
+        return get_option(args, options, at)
     else:
-        return create_attribute("Network activity", "hostname", at["match"], at["page"], at["file"])
+        return create_attribute(args, "Network activity", "hostname", at["match"], at["page"], at["file"])
 
 
 def create_ip(args, at):
@@ -130,9 +167,9 @@ def create_ip(args, at):
                    5: "External analysis : ip-dst",
                    6: "External analysis : ip-src"}
 
-        return get_option(options, at)
+        return get_option(args, options, at)
     else:
-        return create_attribute("Network activity", "ip-dst", at["match"], at["page"], at["file"])
+        return create_attribute(args, "Network activity", "ip-dst", at["match"], at["page"], at["file"])
 
 
 def create_email(args, at):
@@ -143,9 +180,9 @@ def create_email(args, at):
                    3: "Payload delivery : email-dst",
                    4: "Targeting data : target-email"}
 
-        return get_option(options, at)
+        return get_option(args, options, at)
     else:
-        return create_attribute("Payload delivery", "email-src", at["match"], at["page"], at["file"])
+        return create_attribute(args, "Payload delivery", "email-src", at["match"], at["page"], at["file"])
 
 
 def create_md5(args, at):
@@ -156,9 +193,9 @@ def create_md5(args, at):
                    3: "Payload installation : md5",
                    4: "External analysis : md5"}
 
-        return get_option(options, at)
+        return get_option(args, options, at)
     else:
-        return create_attribute("Artifacts dropped", "md5", at["match"], at["page"], at["file"])
+        return create_attribute(args, "Artifacts dropped", "md5", at["match"], at["page"], at["file"])
 
 
 def create_sha1(args, at):
@@ -169,9 +206,9 @@ def create_sha1(args, at):
                    3: "Payload installation : sha1",
                    4: "External analysis : sha1"}
 
-        return get_option(options, at)
+        return get_option(args, options, at)
     else:
-        return create_attribute("Artifacts dropped", "sha1", at["match"], at["page"], at["file"])
+        return create_attribute(args, "Artifacts dropped", "sha1", at["match"], at["page"], at["file"])
 
 
 def create_sha256(args, at):
@@ -182,9 +219,9 @@ def create_sha256(args, at):
                    3: "Payload installation : sha256",
                    4: "External analysis : sha256"}
 
-        return get_option(options, at)
+        return get_option(args, options, at)
     else:
-        return create_attribute("Artifacts dropped", "sha256", at["match"], at["page"], at["file"])
+        return create_attribute(args, "Artifacts dropped", "sha256", at["match"], at["page"], at["file"])
 
 
 def create_cve(args, at):
@@ -194,9 +231,9 @@ def create_cve(args, at):
                    2: "Payload installation : vulnerability",
                    3: "External analysis : vulnerability"}
 
-        return get_option(options, at)
+        return get_option(args, options, at)
     else:
-        return create_attribute("Payload delivery", "vulnerability", at["match"], at["page"], at["file"])
+        return create_attribute(args, "Payload delivery", "vulnerability", at["match"], at["page"], at["file"])
 
 
 def create_registry(args, at):
@@ -209,9 +246,9 @@ def create_registry(args, at):
                    5: "External analysis : regkey",
                    6: "External analysis : regkey|value"}
 
-        return get_option(options, at)
+        return get_option(args, options, at)
     else:
-        return create_attribute("Artifacts dropped", "regkey", at["match"], at["page"], at["file"])
+        return create_attribute(args, "Artifacts dropped", "regkey", at["match"], at["page"], at["file"])
 
 
 def create_filepath(args, at):
@@ -221,9 +258,9 @@ def create_filepath(args, at):
                    2: "Persistance mechanism : filename",
                    3: "External analysis : filename"}
 
-        return get_option(options, at)
+        return get_option(args, options, at)
     else:
-        return create_attribute("Artifacts dropped", "filename", at["match"], at["page"], at["file"])
+        return create_attribute(args, "Artifacts dropped", "filename", at["match"], at["page"], at["file"])
 
 
 def get_misp_attributes_json(args, reports_json):
