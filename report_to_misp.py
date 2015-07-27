@@ -32,9 +32,9 @@ def parse_arguments():
                         default='pdf',
                         help='The format of the report(s) to parse (pdf|txt|html)')
 
-    parser.add_argument('-v', '--verify',
+    parser.add_argument('-nv', '--no_verify',
                         action='store_true',
-                        help='Request the user to verify the type and use of each indicator')
+                        help='Don\'t request the user to verify the type and use of each indicator')
 
     parser.add_argument('-s', '--server',
                         action='store',
@@ -134,7 +134,7 @@ def get_option(args, options, at):
 
 
 def create_url(args, at):
-    if args.verify:
+    if not args.no_verify:
         options = {0: "Do not include",
                    1: "Network activity : url",
                    2: "Payload delivery : url",
@@ -146,7 +146,7 @@ def create_url(args, at):
 
 
 def create_host(args, at):
-    if args.verify:
+    if not args.no_verify:
         options = {0: "Do not include",
                    1: "Network activity : hostname",
                    2: "Payload delivery : hostname",
@@ -158,7 +158,7 @@ def create_host(args, at):
 
 
 def create_ip(args, at):
-    if args.verify:
+    if not args.no_verify:
         options = {0: "Do not include",
                    1: "Network activity : ip-dst",
                    2: "Network activity : ip-src",
@@ -173,7 +173,7 @@ def create_ip(args, at):
 
 
 def create_email(args, at):
-    if args.verify:
+    if not args.no_verify:
         options = {0: "Do not include",
                    1: "Network activity : email-dst",
                    2: "Payload delivery : email-src",
@@ -186,7 +186,7 @@ def create_email(args, at):
 
 
 def create_md5(args, at):
-    if args.verify:
+    if not args.no_verify:
         options = {0: "Do not include",
                    1: "Artifacts dropped : md5",
                    2: "Payload delivery : md5",
@@ -199,7 +199,7 @@ def create_md5(args, at):
 
 
 def create_sha1(args, at):
-    if args.verify:
+    if not args.no_verify:
         options = {0: "Do not include",
                    1: "Artifacts dropped : sha1",
                    2: "Payload delivery : sha1",
@@ -212,7 +212,7 @@ def create_sha1(args, at):
 
 
 def create_sha256(args, at):
-    if args.verify:
+    if not args.no_verify:
         options = {0: "Do not include",
                    1: "Artifacts dropped : sha256",
                    2: "Payload delivery : sha256",
@@ -225,7 +225,7 @@ def create_sha256(args, at):
 
 
 def create_cve(args, at):
-    if args.verify:
+    if not args.no_verify:
         options = {0: "Do not include",
                    1: "Payload delivery : vulnerability",
                    2: "Payload installation : vulnerability",
@@ -237,7 +237,7 @@ def create_cve(args, at):
 
 
 def create_registry(args, at):
-    if args.verify:
+    if not args.no_verify:
         options = {0: "Do not include",
                    1: "Artifacts dropped : regkey",
                    2: "Artifacts dropped : regkey|value",
@@ -252,7 +252,7 @@ def create_registry(args, at):
 
 
 def create_filepath(args, at):
-    if args.verify:
+    if not args.no_verify:
         options = {0: "Do not include",
                    1: "Artifacts dropped : filename",
                    2: "Persistance mechanism : filename",
@@ -349,7 +349,7 @@ def main():
     with open("misp_%s.json" % args.report, "w") as f:
         f.write(json.dumps(misp_event_json, indent=4))
 
-    r = create_misp_event(args, misp_event_json)
+    #r = create_misp_event(args, misp_event_json)
 
     print "MISP API add request response: %s" % str(r)
 
